@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lipa na M-Pesa</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+
+  <div class="max-w-md w-full bg-white rounded-xl shadow-lg p-6 space-y-6">
+    <div class="text-center">
+      <h2 class="text-2xl font-bold text-gray-800">Lipa na M-Pesa</h2>
+      <p class="text-sm text-gray-500 mt-1">Initiate STK Push Payment</p>
+    </div>
+
+    <form id="stkForm" class="space-y-4">
+      <div>
+        <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Phone Number</label>
+        <input 
+          type="tel" 
+          id="phone" 
+          placeholder="0712345678" 
+          required 
+          class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
+        >
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Amount (KES)</label>
+        <input 
+          type="number" 
+          id="amount" 
+          min="1" 
+          placeholder="10" 
+          required 
+          class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
+        >
+      </div>
+
+      <button 
+        type="submit" 
+        id="submitBtn" 
+        class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-lg transition"
+      >
+        Pay Now
+      </button>
+    </form>
+
+    <div id="statusBox" class="hidden p-4 rounded-lg text-sm"></div>
+  </div>
+
+  <script>
+    const form = document.getElementById('stkForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const statusBox = document.getElementById('statusBox');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const phone = document.getElementById('phone').value;
+      const amount = document.getElementById('amount').value;
+
+      submitBtn.disabled = true;
+      submitBtn.innerText = 'Sending Prompt...';
+      statusBox.className = 'hidden';
+
+      try {
+        const response = await fetch('/api/stkpush', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone, amount })
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.ResponseCode === '0') {
+          statusBox.className = 'p-4 rounded-lg text-sm bg-green-50 text-green-700 block';
+          statusBox.innerHTML = `<strong>STK Push Sent!</strong><br>Check your phone to complete payment.`;
+        } else {
+          const errMsg = data.CustomerMessage || data.error?.errorMessage || 'STK Push failed.';
+          statusBox.className = 'p-4 rounded-lg text-sm bg-red-50 text-red-700 block';
+          statusBox.innerHTML = `<strong>Error:</strong> ${errMsg}`;
+        }
+      } catch (err) {
+        statusBox.className = 'p-4 rounded-lg text-sm bg-red-50 text-red-700 block';
+        statusBox.innerHTML = `<strong>Network Error:</strong> Server is unreachable.`;
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerText = 'Pay Now';
+      }
+    });
+  </script>
+</body>
+</html>
